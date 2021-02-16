@@ -10,6 +10,7 @@ namespace BinaryTrees
     public class BinaryTree<T> : IEnumerable<T> where T : IComparable
     {
         T Value;
+        int Weight = 1;
         BinaryTree<T> Left;
         BinaryTree<T> Right;
         bool isInitialized = false;
@@ -25,31 +26,30 @@ namespace BinaryTrees
             {
                 Value = key;
                 isInitialized = true;
+                return;
             }
-            else
+            BinaryTree<T> parentNodeToAdd = this;
+            while (true)
             {
-                BinaryTree<T> parentNodeToAdd = this;
-                while (true)
+                parentNodeToAdd.Weight++;
+                if (parentNodeToAdd.Value.CompareTo(key) > 0)
                 {
-                    if (parentNodeToAdd.Value.CompareTo(key) > 0)
-                    {
-                        if (parentNodeToAdd.Left != null)
-                            parentNodeToAdd = parentNodeToAdd.Left;
-                        else
-                        {
-                            parentNodeToAdd.Left = new BinaryTree<T>(key);
-                            break;
-                        }
-                    }
+                    if (parentNodeToAdd.Left != null)
+                        parentNodeToAdd = parentNodeToAdd.Left;
                     else
                     {
-                        if (parentNodeToAdd.Right != null)
-                            parentNodeToAdd = parentNodeToAdd.Right;
-                        else
-                        {
-                            parentNodeToAdd.Right = new BinaryTree<T>(key);
-                            break;
-                        }
+                        parentNodeToAdd.Left = new BinaryTree<T>(key);
+                        break;
+                    }
+                }
+                else
+                {
+                    if (parentNodeToAdd.Right != null)
+                        parentNodeToAdd = parentNodeToAdd.Right;
+                    else
+                    {
+                        parentNodeToAdd.Right = new BinaryTree<T>(key);
+                        break;
                     }
                 }
             }
@@ -58,41 +58,67 @@ namespace BinaryTrees
         {
             if (!isInitialized)
                 return false;
-            else
+            BinaryTree<T> parentNodeToAdd = this;
+            int compareResult;
+            while (true)
             {
-                BinaryTree<T> parentNodeToAdd = this;
-                int compareResult;
+                compareResult = parentNodeToAdd.Value.CompareTo(key);
+                if (compareResult == 0)
+                    return true;
+                if (compareResult > 0)
+                {
+                    if (parentNodeToAdd.Left != null)
+                        parentNodeToAdd = parentNodeToAdd.Left;
+                    else
+                        return false;
+                }
+                else
+                {
+                    if (parentNodeToAdd.Right != null)
+                        parentNodeToAdd = parentNodeToAdd.Right;
+                    else
+                        return false;
+                }
+            }
+        }
+
+        public T this[int i]
+        {
+            get
+            {
+                BinaryTree<T> root = this;
+                int parentWeight = 0;
                 while (true)
                 {
-                    compareResult = parentNodeToAdd.Value.CompareTo(key);
-                    if (compareResult == 0)
-                        return true;
-                    if (compareResult > 0)
-                    {
-                        if (parentNodeToAdd.Left != null)
-                            parentNodeToAdd = parentNodeToAdd.Left;
-                        else
-                            return false;
-                    }
+                    int currentNodeIndex = (root.Left == null ? 0 : root.Left.Weight) + parentWeight;
+                    if (i == currentNodeIndex)
+                        return root.Value;
+                    if (i < currentNodeIndex)
+                        root = root.Left;
                     else
                     {
-                        if (parentNodeToAdd.Right != null)
-                            parentNodeToAdd = parentNodeToAdd.Right;
-                        else
-                            return false;
+                        root = root.Right;
+                        parentWeight = currentNodeIndex + 1;
                     }
                 }
             }
         }
 
-        public IEnumerator<T> GetEnumerator()
+        public IEnumerator<T> GetEnumerator() => GetEnumeratorForNode(this);
+
+        IEnumerator<T> GetEnumeratorForNode(BinaryTree<T> root)
         {
-            throw new NotImplementedException();
+            if (root == null || !root.isInitialized)
+                yield break;
+            var enumeratorForTreeNode = GetEnumeratorForNode(root.Left);
+            while (enumeratorForTreeNode.MoveNext())
+                yield return enumeratorForTreeNode.Current;
+            yield return root.Value;
+            enumeratorForTreeNode = GetEnumeratorForNode(root.Right);
+            while (enumeratorForTreeNode.MoveNext())
+                yield return enumeratorForTreeNode.Current;
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            throw new NotImplementedException();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }
